@@ -34,4 +34,9 @@ interface MoviesPresenter {
   fun setView(moviesView: MoviesView)
 
   fun getData()
+
+  //not required if viewModel implemented
+/*  fun start()
+
+  fun stop()*/
 }

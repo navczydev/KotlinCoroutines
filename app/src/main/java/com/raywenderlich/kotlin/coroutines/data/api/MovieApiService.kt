@@ -31,6 +31,7 @@ package com.raywenderlich.kotlin.coroutines.data.api
 
 import com.raywenderlich.kotlin.coroutines.data.model.MoviesResponse
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -40,5 +41,8 @@ import retrofit2.http.Query
 interface MovieApiService {
 
   @GET("/3/movie/popular")
-  fun getMovies(@Query("api_key") apiKey: String): Call<MoviesResponse>
+  //fun getMovies(@Query("api_key") apiKey: String): Call<MoviesResponse>
+  suspend fun getMovies(@Query("api_key") apiKey: String): Response<MoviesResponse>
+  //use following method when direct mapping or generic error is needs to be handled
+  //suspend fun getMovies(@Query("api_key") apiKey: String): MoviesResponse
 }

@@ -36,8 +36,8 @@ import com.raywenderlich.kotlin.coroutines.data.model.Movie
  */
 interface MovieRepository {
 
-  fun getMovies(
-      onMoviesReceived: (List<Movie>) -> Unit,
-      onError: (Throwable) -> Unit
-  )
+  //suspend fun getMovies():Result<List<Movie>>
+
+  //use kotlin's in-build Result
+  suspend fun getMovies():List<Movie>
 }

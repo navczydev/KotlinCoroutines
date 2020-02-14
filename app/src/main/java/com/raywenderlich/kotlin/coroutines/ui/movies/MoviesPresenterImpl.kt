@@ -29,12 +29,49 @@
  */
 package com.raywenderlich.kotlin.coroutines.ui.movies
 
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.raywenderlich.kotlin.coroutines.domain.repository.MovieRepository
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Handles the business logic calls, reacting to UI events.
  */
-class MoviesPresenterImpl(private val movieRepository: MovieRepository) : MoviesPresenter {
+/*class MoviesPresenterImpl(private val movieRepository: MovieRepository) :ViewModel(), MoviesPresenter,
+    CoroutineScope {*/
+class MoviesPresenterImpl(private val movieRepository: MovieRepository) : ViewModel(),
+    MoviesPresenter {
+    //MAIN-FIRST - don't need to switch back to MAIN
+    // if this job's any child get failed or cancelled that will trigger the cancellation of parent
+    //which means cancel all the children,cancelling parent will automatically cancel the all children
+    //private var parentJob = Job()
+    //private val parentJob = SupervisorJob()
+
+   /* private val coroutineExceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            Log.e("###", throwable.message ?: "")
+        }*/
+
+    //required for Job
+    //only for presenter
+    /*override fun start() {
+        //if(!parentJob.isActive) parentJob = Job()
+    }
+
+    override fun stop() {
+        //cancel when activity's stop called
+        //supervisorJob' it will keep itself alive and kills all children
+        parentJob.cancelChildren()
+        //used for Job()
+        //parentJob.cancel()
+    }*/
+
+/*
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + parentJob + coroutineExceptionHandler
+*/
 
     private lateinit var moviesView: MoviesView
 
@@ -43,10 +80,26 @@ class MoviesPresenterImpl(private val movieRepository: MovieRepository) : Movies
     }
 
     override fun getData() {
-        movieRepository.getMovies(
-            onMoviesReceived = { movies -> moviesView.showMovies(movies) },
-            onError = { throwable -> handleError(throwable) }
-        )
+        viewModelScope.launch {
+            //launch {
+            //for testing job creation-recreation
+            //delay(5000)
+            //fire the network call
+            //val result = movieRepository.getMovies()
+            //check if data is there process it
+            /*if (result.value != null && result.value.isNotEmpty()) {
+                moviesView.showMovies(result.value)
+            } else if (result.throwable != null) {
+                handleError(result.throwable)
+            }*/
+            val result = runCatching { movieRepository.getMovies() }
+            result.onSuccess {
+                moviesView.showMovies(it)
+            }.onFailure {
+                Log.e("###", it.message ?: "")
+                handleError(it)
+            }
+        }
     }
 
     private fun handleError(throwable: Throwable) {

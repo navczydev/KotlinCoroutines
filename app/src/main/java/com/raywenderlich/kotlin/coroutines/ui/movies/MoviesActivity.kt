@@ -39,31 +39,41 @@ import org.koin.android.ext.android.inject
 
 class MoviesActivity : AppCompatActivity(), MoviesView {
 
-  private val presenter by inject<MoviesPresenter>()
-  private val movieAdapter by lazy { MovieAdapter() }
+    private val presenter by inject<MoviesPresenter>()
+    private val movieAdapter by lazy { MovieAdapter() }
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_main)
-    initUi()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        initUi()
 
-    presenter.setView(this)
-    presenter.getData()
-  }
+        presenter.setView(this)
+    }
 
-  private fun initUi() {
-    moviesList.adapter = movieAdapter
-    moviesList.layoutManager = LinearLayoutManager(this)
-    swipeToRefresh.setOnRefreshListener { presenter.getData() }
-  }
+    private fun initUi() {
+        moviesList.adapter = movieAdapter
+        moviesList.layoutManager = LinearLayoutManager(this)
+        swipeToRefresh.setOnRefreshListener { presenter.getData() }
+    }
 
-  override fun showMovies(movies: List<Movie>) {
-    movieAdapter.setData(movies)
-    swipeToRefresh.isRefreshing = false
-  }
+    override fun showMovies(movies: List<Movie>) {
+        movieAdapter.setData(movies)
+        swipeToRefresh.isRefreshing = false
+    }
 
-  override fun showError(throwable: Throwable) {
-    swipeToRefresh.isRefreshing = false
-    // handle error
-  }
+    override fun showError(throwable: Throwable) {
+        swipeToRefresh.isRefreshing = false
+        // handle error
+    }
+
+    override fun onStart() {
+        super.onStart()
+        //presenter.start()
+        presenter.getData()
+    }
+
+    override fun onStop() {
+        //presenter.stop()
+        super.onStop()
+    }
 }

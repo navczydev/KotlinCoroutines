@@ -31,13 +31,11 @@ package com.raywenderlich.kotlin.coroutines.domain.repository
 
 import com.raywenderlich.kotlin.coroutines.data.api.MovieApiService
 import com.raywenderlich.kotlin.coroutines.data.database.MovieDao
-import com.raywenderlich.kotlin.coroutines.di.API_KEY
 import com.raywenderlich.kotlin.coroutines.data.model.Movie
-import com.raywenderlich.kotlin.coroutines.data.model.MoviesResponse
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.io.IOException
+import com.raywenderlich.kotlin.coroutines.di.API_KEY
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 
 /**
  * Connects to the end entity, and exposes functionality to the user.
@@ -47,33 +45,56 @@ class MovieRepositoryImpl(
     private val movieDao: MovieDao
 ) : MovieRepository {
 
-  override fun getMovies(
-      onMoviesReceived: (List<Movie>) -> Unit,
-      onError: (Throwable) -> Unit
-  ) {
-    movieApiService.getMovies(API_KEY).enqueue(object : Callback<MoviesResponse> {
-      override fun onFailure(call: Call<MoviesResponse>, throwable: Throwable) {
-        val savedMovies = movieDao.getSavedMovies()
-
-        /**
-         * If there's no internet connection, default to the cached values.
-         * Otherwise propagate the error.
-         * */
-        if (throwable is IOException && savedMovies.isNotEmpty()) {
-          onMoviesReceived(savedMovies)
-        } else {
-          onError(throwable)
+    /*override suspend fun getMovies(): Result<List<Movie>> = withContext(Dispatchers.IO) {
+        //parallel async
+        //get data from Room
+        val cachedMoviesDeferred = async {
+            movieDao.getSavedMovies()
         }
-      }
-
-      override fun onResponse(call: Call<MoviesResponse>, response: Response<MoviesResponse>) {
-        val movies = response.body()?.movies ?: emptyList()
-
-        if (movies.isNotEmpty()) {
-          movieDao.saveMovies(movies)
+        //execute retrofit call, context switching handled by Retrofit
+        val resultD = async {
+            movieApiService.getMovies(API_KEY)
         }
-        onMoviesReceived(movies)
-      }
-    })
-  }
+
+        val cachedMovies = cachedMoviesDeferred.await()
+        try {
+            val result = resultD.await()
+            val moviesFromNetwork = result.body()?.movies
+            if (result.isSuccessful && !moviesFromNetwork.isNullOrEmpty()) {
+                Result(moviesFromNetwork, null)
+            } else {
+                Result(cachedMovies, null)
+            }
+
+        } catch (throwable: Throwable) {
+            if (throwable is IOException || cachedMovies.isEmpty()) {
+                Result(null, throwable)
+            } else {
+                //get cached data if there is an error
+                Result(cachedMovies, null)
+            }
+        }
+    }*/
+
+    override suspend fun getMovies(): List<Movie> = withContext(Dispatchers.IO) {
+        //parallel async
+        //get data from Room
+        val cachedMoviesDeferred = async { movieDao.getSavedMovies() }
+        //execute retrofit call, context switching handled by Retrofit
+        val resultDeferred = movieApiService.getMovies(API_KEY)
+        //val resultDeffered = async { movieApiService.getMovies(API_KEY) }
+        val cachedMovies = cachedMoviesDeferred.await()
+        /* val apiMovies = if(resultDeffered.await().isSuccessful) {
+                 resultDeffered.await().body()?.movies
+             } else ArrayList()
+ */
+        val apiMovies = if (resultDeferred.isSuccessful) {
+            resultDeferred.body()?.movies
+        } else ArrayList()
+
+        apiMovies ?: cachedMovies
+
+    }
+
+
 }

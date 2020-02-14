@@ -53,8 +53,9 @@ abstract class MovieDatabase : RoomDatabase() {
           MovieDatabase::class.java,
           "movies"
       )
-          .allowMainThreadQueries()
           .build()
     }
   }
 }
+//this will allow to access the DB from main thread
+//   .allowMainThreadQueries()
